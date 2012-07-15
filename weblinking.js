@@ -1,40 +1,99 @@
 /**
  * This module is able to parse RFC5988 Web Linking link values, such as those
  * found in the HTTP link header. It's main export is the parse function which
- * returns an object with prototype linkPrototype. The link object contains the
- * link's URI-Reference, plus additional link parameters. Link parameters are
+ * returns a Link object. The Link object is a list of links, each containing a
+ * URI-Reference, plus additional link parameters. Link parameters are
  * expressed as a tuple of {value, charset, language} in order to capture
  * extended parameters such as the extended variant of "title". Unfortunately it
  * isn't possible to obtain the link header associated with the current loaded
  * page, but this module can be used in conjunction with the XMLHttpRequest
  * getResponseHeader function.
  * 
- * Note that this is parser rather than a validator. Invalid headers may still
+ * Note that this is a parser rather than a validator. Invalid headers may still
  * be accepted.
  * 
- * @module weblinking
- * 
  * Copyright Benjamin Carlyle 2012. See accompanying UNLICENSE file.
+ * 
+ * @author <a href="http://soundadvice.id.au/blog/">Benjamin Carlyle</a>
+ * @namespace
  */
 var weblinking = (function () {
 	"use strict";
 	/*jslint regexp: true */
 	/*properties
-	charset, create, exec, getLinkValuesByRel, language, length, linkPrototype,
-	linkvalue, media, parse, push, rel, replace, run, test, title, urireference,
-	value, indexOf
+	Link, LinkParam, LinkValue, charset, create, exec, getLinkValuesByRel,
+	indexOf, language, length, linkvalue, parse, push, rel, replace, test,
+	urireference, value, weblinking
 	*/
-	// Private
-	var linkValueRegex = /^\s*<\s*([^>]*)\s*>\s*(,|;|$)/, linkParamRegex = /^\s*((([^=*]*)\s*=\s*(("\s*([^"]*)\s*")|([^\s",;]*)))|(([^=*]*)\*\s*=\s*([^',;]*)'([^',;]*)'([^',;]*)))\s*(,|;|$)/, emptyRegex = /^\s*$/;
+	var
+		/** @private @type regex */
+		linkValueRegex = /^\s*<\s*([^>]*)\s*>\s*(,|;|$)/,
+		/** @private @type regex */
+		linkParamRegex = /^\s*((([^=*]*)\s*=\s*(("\s*([^"]*)\s*")|([^\s",;]*)))|(([^=*]*)\*\s*=\s*([^',;]*)'([^',;]*)'([^',;]*)))\s*(,|;|$)/,
+		/** @private @type regex */
+		emptyRegex = /^\s*$/;
 
+	/**
+	 * @scope weblinking
+	 */
 	return {
 		// Public
 
-		linkPrototype : {
+		/** A single link-param
+		 * @param {!string} value The value of the parameter
+		 * @param {!string} [charset] The charset of the parameter
+		 * @param {!string} [language] The language of the parameter
+		 * @namespace
+		 */
+		LinkParam : function (value, charset, language) {
+			var that = {};
+			/** The value of the link parameter (decoded if ext-value)
+			 * @name weblinking.LinkParam.value
+			 * @type !string
+			 */
+			that.value = value;
+			/** The charset of the link parameter
+			 * @name weblinking.LinkParam.charset
+			 * @type !string
+			 * @default US-ASCII
+			 */
+			that.charset = charset || "US-ASCII";
+			/** The language of the link parameter
+			 * @name weblinking.LinkParam.language
+			 * @type !string
+			 * @default ""
+			 */
+			that.language = language || "";
+			return that;
+		},
+
+		/**
+		 * A single link-value.
+		 * 
+		 * The fixed urireference field is always available. Other fields of
+		 * type weblinking.LinkParam are added directly as fields.
+		 * @param {!string} urireference The URI-Reference for this link-value
+		 * @namespace
+		 */
+		LinkValue : function (urireference) {
+			var that = {};
+			/** The uri reference of the link-value
+			 * @name weblinking.LinkValue.urireference
+			 * @type !string
+			 */
+			that.urireference = urireference;
+			return that;
+		},
+
+		/** A set of link-values
+		 * @namespace
+		 * */
+		Link : {
 			/**
 			 * Returns the link-values that match the nominated rel value
 			 * 
-			 * @param{rel} The link relation to search for
+			 * @param {!string} rel The link relation to search for
+			 * @return {!weblinking.LinkValue[]} The set of link-values corresponding to rel
 			 */
 			getLinkValuesByRel : function (rel) {
 				var result = [], ii, length, expandedrel, expandedvalue;
@@ -52,21 +111,21 @@ var weblinking = (function () {
 		/**
 		 * Parse the nominated link header
 		 * 
-		 * @alias weblinking:parse
-		 * @returns an object with structure { linkvalue: [ { urireference:
-		 *          string, parmname: { value: string, charset: string,
-		 *          language: string }, ... ] } where one instance of the
-		 *          parmname structure is created for each link-param. The
-		 *          returned object's prototype is linkPrototype. By default
-		 *          charset is US-ASCII and language is "". If extended
-		 *          parameters are used the values are taken from the
-		 *          parameters. prototype
+		 * @function
+		 * 
+		 * @param {!string} header The text of the Link header
+		 * 
+		 * @returns {!weblinking.Link} The parsed header information.
 		 */
 		parse : function (header) {
-			var link, linkvalue, fields, obj;
+			var result, linkvalue, fields, obj;
 
-			link = Object.create(this.linkPrototype);
-			link.linkvalue = [];
+			result = Object.create(this.Link);
+			/** The set of link values
+			 * @name weblinking.Link.linkvalue
+			 * @type !weblinking.LinkValue[]
+			 */
+			result.linkvalue = [];
 
 			while (!emptyRegex.test(header)) {
 				// Loop over link-values
@@ -79,7 +138,7 @@ var weblinking = (function () {
 							+ header;
 				}
 				linkvalue = {};
-				link.linkvalue.push(linkvalue);
+				result.linkvalue.push(linkvalue);
 				linkvalue.urireference = fields[1];
 				header = header.replace(linkValueRegex, "");
 
@@ -95,26 +154,18 @@ var weblinking = (function () {
 					}
 					if (fields[7] !== undefined) {
 						// This is an unquoted value
-						obj = {};
-						obj.value = fields[7];
-						obj.charset = "US-ASCII";
-						obj.language = "";
+						obj = weblinking.LinkParam(fields[7]);
 						linkvalue[fields[3]] = obj;
 					}
 					if (fields[6] !== undefined) {
 						// This is a quoted value
-						obj = {};
-						obj.value = fields[6];
-						obj.charset = "US-ASCII";
-						obj.language = "";
+						obj = weblinking.LinkParam(fields[6]);
 						linkvalue[fields[3]] = obj;
 					}
 					if (fields[8] !== undefined) {
 						// This is an extension value
-						obj = {};
-						obj.value = decodeURIComponent(fields[12]);
-						obj.charset = fields[10];
-						obj.language = fields[11];
+						obj = weblinking.LinkParam(decodeURI(fields[12]),
+								fields[10], fields[11]);
 						linkvalue[fields[9]] = obj;
 					}
 					header = header.replace(linkParamRegex, "");
@@ -122,7 +173,9 @@ var weblinking = (function () {
 				} while (fields[13] === ";");
 			}
 
-			return link;
+			return result;
 		}
 	};
 }());
+
+window['weblinking'] = weblinking;
