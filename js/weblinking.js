@@ -27,9 +27,11 @@
  * <ul>
  * <li>All extended parameters must be encoded in US-ASCII or UTF-8 (ie subsets
  * of UTF-8). Other encodings break the javascript decodeURI function.</li>
- * <li>The automated test cases are currently not working when compiled with
- * closure's advanced optimisations. At least one variable is being renamed that
- * shouldn't be in the test code.</li>
+ * <li>Because the properties of a link are referred to by string names within
+ * this code, the advanced optimisations mode of the closure compiler may
+ * require them to be referred to the same way by code outside of weblinking.js
+ * to avoid incorrect renaming. The simple optimisations mode does not suffer
+ * this problem.</li>
  * </ul>
  * 
  * Copyright Benjamin Carlyle 2012. See accompanying UNLICENSE file.

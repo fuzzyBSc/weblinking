@@ -1,7 +1,7 @@
-<project basedir="." default="compile">
+<project basedir="." default="default">
 	<taskdef name="jscomp" classname="com.google.javascript.jscomp.ant.CompileTask"
             classpath="closure/compiler.jar"/>
-    <!--taskdef name="jsdoctoolkit" classname="uk.co.darrenhurley.ant.tasks.JsDocToolkit" classpath="/usr/share/java/jsrun.jar"/-->
+	<!--taskdef name="jsdoctoolkit" classname="uk.co.darrenhurley.ant.tasks.JsDocToolkit" classpath="/usr/share/java/jsrun.jar"/-->
 
 	<target name="clean">
 		<delete dir="build"/>
@@ -19,9 +19,12 @@
 				<file name="export.js"/>
 			</sources>
 		</jscomp>
-		
-		<exec executable="jsdoc"><arg value="-d=build"/> <arg value="js/weblinking.js"/></exec>
-	
+
+		<exec executable="jsdoc">
+			<arg value="-d=build"/>
+			<arg value="js/weblinking.js"/>
+		</exec>
+
 		<!--jsdoctoolkit jsdochome="/usr/share/jsdoc-toolkit" template="jsdoc" outputdir="build" includeprivate="false">
 			<source file="js/weblinking.js" />
 		</jsdoctoolkit-->
@@ -36,7 +39,7 @@
 			<include name="js/weblinking.js" />
 			<include name="test/*.js" />
 		</fileset>
-		
+
 		<concat destfile="build/test.js">
 			<fileset refid="testprogs"/>
 		</concat>
@@ -51,7 +54,9 @@
 		</jscomp>
 
 		<script language="javascript" src="build/test.js"/>
-		<!--script language="javascript" src="build/test-closure.js"/-->
+		<script language="javascript" src="build/test-closure.js"/>
 	</target>
+
+	<target name="default" depends="compile,test"/>
 
 </project>

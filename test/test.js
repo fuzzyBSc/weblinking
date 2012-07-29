@@ -6,9 +6,12 @@ if (rel[0].urireference !== "http://example.com/;;;,,,") throw "Wrong URI-Refere
 if (rel[0].rel.value !== "next;;;,,, next") throw "Wrong rel value";
 if (rel[0].rel.charset !== "US-ASCII") throw "Wrong rel charset";
 if (rel[0].rel.language !== "") throw "Wrong rel language";
-if (rel[0].foo.value !== "bar") throw "Wrong foo value";
-if (rel[0].foo.charset !== "US-ASCII") throw "Wrong media charset";
-if (rel[0].foo.language !== "") throw "Wrong media language";
+// Because we are referring to properties of the data structure by their string
+// names within weblinking.js the closure compiler sometimes we refer to them
+// with string names out here to avoid incorrect renaming.
+if (rel[0]["foo"].value !== "bar") throw "Wrong foo value";
+if (rel[0]["foo"].charset !== "US-ASCII") throw "Wrong media charset";
+if (rel[0]["foo"].language !== "") throw "Wrong media language";
 if (rel[0].media.value !== "text/html") throw "Wrong media value";
 if (rel[0].media.charset !== "US-ASCII") throw "Wrong media charset";
 if (rel[0].media.language !== "") throw "Wrong media language";
