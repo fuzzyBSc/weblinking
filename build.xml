@@ -1,6 +1,6 @@
 <project basedir="." default="default">
 	<taskdef name="jscomp" classname="com.google.javascript.jscomp.ant.CompileTask"
-            classpath="closure/compiler.jar"/>
+            classpath="dependencies/compiler.jar"/>
 	<!--taskdef name="jsdoctoolkit" classname="uk.co.darrenhurley.ant.tasks.JsDocToolkit" classpath="/usr/share/java/jsrun.jar"/-->
 
 	<target name="clean">
@@ -14,9 +14,9 @@
 
 		<jscomp compilationLevel="advanced" 
 	        debug="false" output="build/weblinking.js">
-			<sources dir="js">
-				<file name="weblinking.js"/>
-				<file name="export.js"/>
+			<sources dir=".">
+				<file name="js/weblinking.js"/>
+				<file name="js/export.js"/>
 			</sources>
 		</jscomp>
 
@@ -36,6 +36,7 @@
 </echo>
 
 		<fileset id="testprogs" dir=".">
+			<include name="dependencies/URI.js"/>
 			<include name="js/weblinking.js" />
 			<include name="test/*.js" />
 		</fileset>
@@ -47,9 +48,10 @@
 		<jscomp compilationLevel="advanced"
 	        debug="false" output="build/test-closure.js">
 			<sources dir=".">
+				<file name="dependencies/URI.js"/>
 				<file name="js/weblinking.js"/>
 				<file name="test/test.js"/>
-				<!--file name="test/greenbytes.js"/-->
+				<file name="test/greenbytes.js"/>
 			</sources>
 		</jscomp>
 

@@ -5,23 +5,13 @@
  * URI-Reference, plus additional link parameters. Link parameters are expressed
  * as a tuple of {value, charset, language} in order to capture extended
  * parameters such as the extended variant of "title". Unfortunately it isn't
- * possible to obtain the link header associated with the current loaded page,
- * but this module can be used in conjunction with the XMLHttpRequest
- * getResponseHeader function.
+ * possible to obtain the link header associated with the current loaded page.
+ * We must depend on the browser inserting &lt;link&gt; elements into the DOM
+ * for access to this information.This module can be used in conjunction with
+ * the XMLHttpRequest getResponseHeader function.
  * 
  * Note that this is a parser rather than a validator. Invalid headers may still
  * be accepted.
- * 
- * A number of extentions to the RFC 5988 syntax are currently allowed:
- * <ul>
- * <li>The URI template is not required to be the first field to appear in the
- * link value.</li>
- * <li>Single-quoted string (as opposed to double-quoted strings) are allowed.</li>
- * <li>Quoting characters within quoted strings with the backslash '\'
- * character is allowed.</li>
- * <li>These extensions are in line with the test cases found <a
- * href="http://greenbytes.de/tech/tc/httplink/">here</a></li>
- * </ul>
  * 
  * Bugs:
  * <ul>
@@ -48,17 +38,50 @@ var weblinking = (function () {
 	*/
 	var
 		/** @private @type regex */
-		linkRegex = /^\s*((<\s*([^>]*)\s*>)|(([^=*]*)\s*=\s*(("\s*((([^"\\])|(\\.))*)\s*")|('\s*((([^"\\])|(\\.))*)\s*')|([^\s",;]*)))|(([^=*]*)\*\s*=\s*([^',;]*)'([^',;]*)'([^',;]*)))\s*(,|;|$)/,
+		linkRegex = /^\s*<\s*([^>]*)\s*>\s*(,|;|$)/,
 		/** @private @type regex */
-		skipRegex = /^[^,;]*(,|;|$)/,
+		paramRegex = /^\s*((([a-zA-Z0-9!#$&+-.\^_`|~]*)\s*=\s*(("\s*((([^"\\])|(\\.))*)\s*")|([!#$%&'()*+-.\/0-9:<=>?@a-zA-Z\[\]\^_`{|}~]*)))|(([a-zA-Z0-9!#$&+-.\^_`|~]*)\*\s*=\s*([^',;]*)'([^',;]*)'([^',;]*)))\s*(,|;|$)/,
+		/** @private @type regex */
+		skipLinkRegex = /^[^,]*(,|$)/,
+		/** @private @type regex */
+		skipParamRegex = /^[^,;]*(,|;|$)/,
 		/** @private @type regex */
 		emptyRegex = /^\s*$/;
 
 	var LinkParamProto = {
-		toString: function () {
-			return this.value;
-		}
-	};
+			toString: function () {
+				return this.value;
+			}
+		};
+
+	var LinkValueProto = {
+			/**
+			 * Resolve the link URI Reference, relative to the specified Uri
+			 * object.
+			 * 
+			 * The code for the resolve function depends upon the closure
+			 * library, or a similar object. Specifically the object must have a
+			 * resolve function that accepts a string and returns an object of
+			 * the same type.
+			 * 
+			 * @name weblinking.LinkValue.resolve
+			 * @param baseURI
+			 *            The absolute URI to resolve this relative URI against
+			 * @param resolver
+			 *            A resolver function(baseURI, relativeURI). This
+			 *            function is required to accept a base URI of the type
+			 *            passed into resolve plus a string parameter, and
+			 *            return a type consistent that can be passed into the
+			 *            resolver again.
+			 * @returns The resolved URI as returned from resolver
+			 */
+			resolve: function (baseURI, resolver) {
+				if (this.anchor !== undefined) {
+					baseURI = resolver(baseURI, this.anchor.toString());
+				}
+				return resolver(baseURI, this.urireference);
+			}
+		};
 
 	var stripslasshes = function (str) {
 		// From: http://phpjs.org/functions/stripslashes:537
@@ -132,7 +155,7 @@ var weblinking = (function () {
 		 * @namespace
 		 */
 		LinkValue: function (urireference) {
-			var that = {};
+			var that = Object.create(LinkValueProto);
 			/** The uri reference of the link-value
 			 * @name weblinking.LinkValue.urireference
 			 * @type !string
@@ -178,7 +201,7 @@ var weblinking = (function () {
 		 * @return {!weblinking.Link} The parsed header information.
 		 */
 		parse: function (header) {
-			var result, linkvalue, fields, obj, matched, keepLooping;
+			var result, linkvalue, fields, obj, matched, keepLooping, urireference;
 
 			result = Object.create(this.Link);
 			/** The set of link values
@@ -187,18 +210,21 @@ var weblinking = (function () {
 			 */
 			result.linkvalue = [];
 
-			var linkRegexFunc = function (all, e1, e2, uriref, e4, parmname, e6, e7, doubleQuotedValue, e9, e10, e11, e12, singleQuotedValue, e14, e15, e16, unquotedValue, e18, extparmname, extcharset, extlanguage, extvalue, endToken) {
+			var linkFunc = function (all, uriref, endToken) {
 				matched = true;
 				if (uriref !== undefined) {
 					// Look for URI-Reference
-					linkvalue.urireference = uriref;
-				} else if (unquotedValue !== undefined) {
+					urireference = uriref;
+				}
+				keepLooping = (endToken === ';');
+				return '';
+			};
+
+			var paramFunc = function (all, e1, e2, parmname, e4, e5, doubleQuotedValue, e7, e8, e9, unquotedValue, e11, extparmname, extcharset, extlanguage, extvalue, endToken) {
+				matched = true;
+				if (unquotedValue !== undefined) {
 					// This is an unquoted value
 					obj = weblinking.LinkParam(unquotedValue);
-					linkvalue[parmname] = obj;
-				} else if (singleQuotedValue !== undefined) {
-					// This is a single-quoted value
-					obj = weblinking.LinkParam(stripslasshes(singleQuotedValue));
 					linkvalue[parmname] = obj;
 				} else if (doubleQuotedValue !== undefined) {
 					// This is a double-quoted value
@@ -221,7 +247,7 @@ var weblinking = (function () {
 				return '';
 			};
 
-			var skipRegexFunc = function (all, endToken) {
+			var skipFunc = function (all, endToken) {
 				matched = true;
 				keepLooping = (endToken === ';');
 				return '';
@@ -229,26 +255,42 @@ var weblinking = (function () {
 
 			while (!emptyRegex.test(header)) {
 				// Loop over link-values
-				linkvalue = {};
+				keepLooping = false;
+				matched = false;
+
+				header = header.replace(linkRegex, linkFunc);
+
+				if (!matched) {
+					// Invalid link
+					// Skip past the next comma.
+					header = header.replace(skipLinkRegex, skipFunc);
+
+					if (!matched) {
+						// It looks like even that attempt didn't match. Abandon all further processing.
+						header = '';
+					}
+					continue;
+				}
+				
+				linkvalue = weblinking.LinkValue(urireference);
 				result.linkvalue.push(linkvalue);
 
-				do {
+				while (keepLooping) {
 					// Loop over fields within the link-value
 					keepLooping = false;
 					matched = false;
-					header = header.replace(linkRegex, linkRegexFunc);
+					header = header.replace(paramRegex, paramFunc);
 					if (!matched) {
 						// Invalid parameter
 						// Skip past the next comma or colon.
-						header = header.replace(skipRegex, skipRegexFunc);
+						header = header.replace(skipParamRegex, skipFunc);
 
-						// Do our best to skip over it
 						if (!matched) {
 							// It looks like even that attempt didn't match. Abandon all further processing.
 							header = '';
 						}
 					}
-				} while (keepLooping);
+				}
 			}
 
 			return result;
