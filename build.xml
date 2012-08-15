@@ -16,7 +16,6 @@
 	        debug="false" output="build/weblinking.js">
 			<sources dir=".">
 				<file name="js/weblinking.js"/>
-				<file name="js/export.js"/>
 			</sources>
 		</jscomp>
 
@@ -35,21 +34,18 @@
 		<echo file="build/.gitignore">*
 </echo>
 
-		<fileset id="testprogs" dir=".">
-			<include name="test/ant-test.js"/>
-			<include name="dependencies/URI.js"/>
-			<include name="js/weblinking.js" />
-			<include name="test/*.js" />
-		</fileset>
-
 		<concat destfile="build/test.js">
-			<fileset refid="testprogs"/>
+			<fileset dir=".">
+				<include name="dependencies/URI.js"/>
+				<include name="js/weblinking.js" />
+				<include name="test/test.js" />
+				<include name="test/greenbytes.js" />
+			</fileset>
 		</concat>
 
 		<jscomp compilationLevel="advanced"
 	        debug="false" output="build/test-closure.js">
 			<sources dir=".">
-				<file name="test/ant-test.js"/>
 				<file name="dependencies/URI.js"/>
 				<file name="js/weblinking.js"/>
 				<file name="test/test.js"/>
@@ -57,8 +53,30 @@
 			</sources>
 		</jscomp>
 
-		<script language="javascript" src="build/test.js"/>
-		<script language="javascript" src="build/test-closure.js"/>
+		<concat destfile="build/test-ant.js">
+			<fileset dir=".">
+				<include name="test/ant-test.js"/>
+			</fileset>
+		</concat>
+		<concat destfile="build/test-ant.js" append="yes">
+			<fileset dir=".">
+				<include name="build/test.js"/>
+			</fileset>
+		</concat>
+
+		<concat destfile="build/test-closure-ant.js">
+			<fileset dir=".">
+				<include name="test/ant-test.js"/>
+			</fileset>
+		</concat>
+		<concat destfile="build/test-closure-ant.js" append="yes">
+			<fileset dir=".">
+				<include name="build/test-closure.js"/>
+			</fileset>
+		</concat>
+		
+		<script language="javascript" src="build/test-ant.js"/>
+		<script language="javascript" src="build/test-closure-ant.js"/>
 	</target>
 
 	<target name="default" depends="compile,test"/>

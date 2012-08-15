@@ -1,36 +1,11 @@
 /**
- * This module is able to parse RFC5988 Web Linking link values, such as those
- * found in the HTTP link header. It's main export is the parse function which
- * returns a Link object. The Link object is a list of links, each containing a
- * URI-Reference, plus additional link parameters. Link parameters are expressed
- * as a tuple of {value, charset, language} in order to capture extended
- * parameters such as the extended variant of "title". Unfortunately it isn't
- * possible to obtain the link header associated with the current loaded page.
- * We must depend on the browser inserting &lt;link&gt; elements into the DOM
- * for access to this information.This module can be used in conjunction with
- * the XMLHttpRequest getResponseHeader function.
- * 
- * Note that this is a parser rather than a validator. Invalid headers may still
- * be accepted.
- * 
- * Bugs:
- * <ul>
- * <li>All extended parameters must be encoded in US-ASCII or UTF-8 (ie subsets
- * of UTF-8). Other encodings break the javascript decodeURI function.</li>
- * <li>Because the properties of a link are referred to by string names within
- * this code, the advanced optimisations mode of the closure compiler may
- * require them to be referred to the same way by code outside of weblinking.js
- * to avoid incorrect renaming. The simple optimisations mode does not suffer
- * this problem.</li>
- * </ul>
- * 
  * Copyright Benjamin Carlyle 2012. See accompanying UNLICENSE file.
  * 
  * @author <a href="http://soundadvice.id.au/blog/">Benjamin Carlyle</a>
- * @namespace
  */
-var weblinking = (function () {
+(function (root) {
 	'use strict';
+	/*globals exports:true,module,define*/
 	/*properties
 	Link, LinkParam, LinkValue, charset, create, exec, getLinkValuesByRel,
 	indexOf, language, length, linkvalue, parse, push, rel, replace, test,
@@ -113,7 +88,37 @@ var weblinking = (function () {
 	    });
 	};
 
-	return {
+	/**
+	 * This module is able to parse RFC5988 Web Linking link values, such as
+	 * those found in the HTTP link header. It's main export is the parse
+	 * function which returns a Link object. The Link object is a list of links,
+	 * each containing a URI-Reference, plus additional link parameters. Link
+	 * parameters are expressed as a tuple of {value, charset, language} in
+	 * order to capture extended parameters such as the extended variant of
+	 * "title". Unfortunately it isn't possible to obtain the link header
+	 * associated with the current loaded page. We must depend on the browser
+	 * inserting &lt;link&gt; elements into the DOM for access to this
+	 * information.This module can be used in conjunction with the
+	 * XMLHttpRequest getResponseHeader function.
+	 * 
+	 * Note that this is a parser rather than a validator. Invalid headers may
+	 * still be accepted.
+	 * 
+	 * Bugs:
+	 * <ul>
+	 * <li>All extended parameters must be encoded in US-ASCII or UTF-8 (ie
+	 * subsets of UTF-8). Other encodings break the javascript decodeURI
+	 * function.</li>
+	 * <li>Because the properties of a link are referred to by string names
+	 * within this code, the advanced optimisations mode of the closure compiler
+	 * may require them to be referred to the same way by code outside of
+	 * weblinking.js to avoid incorrect renaming. The simple optimisations mode
+	 * does not suffer this problem.</li>
+	 * </ul>
+	 * 
+	 * @name weblinking
+	 */
+	var weblinking = {
 		// Public
 
 		/** A single link-param
@@ -296,4 +301,21 @@ var weblinking = (function () {
 			return result;
 		}
 	};
-}());
+
+	// Export weblinking using similar export mechanism as in uris.js/underscore.js.
+	// Add 'weblinking' to the global object if not in a module environment.
+	if (typeof define === 'function' && define.amd) {
+		// Register as a module with AMD.
+		define([], function () {
+			return weblinking;
+		});
+	} else if (typeof exports !== 'undefined') {
+		if (typeof module !== 'undefined' && module.exports) {
+			exports = module.exports = weblinking;
+		}
+		exports.weblinking = weblinking;
+	} else {
+		// Exported as a string, for Closure Compiler "advanced" mode.
+		root['weblinking'] = weblinking;
+	}
+}(this));
