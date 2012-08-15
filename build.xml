@@ -36,6 +36,7 @@
 </echo>
 
 		<fileset id="testprogs" dir=".">
+			<include name="test/ant-test.js"/>
 			<include name="dependencies/URI.js"/>
 			<include name="js/weblinking.js" />
 			<include name="test/*.js" />
@@ -48,6 +49,7 @@
 		<jscomp compilationLevel="advanced"
 	        debug="false" output="build/test-closure.js">
 			<sources dir=".">
+				<file name="test/ant-test.js"/>
 				<file name="dependencies/URI.js"/>
 				<file name="js/weblinking.js"/>
 				<file name="test/test.js"/>
