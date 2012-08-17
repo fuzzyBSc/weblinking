@@ -2,7 +2,7 @@
 // Used with permission. See email from Julian Reschke <julian.reschke@gmx.de>
 // to Benjamin Carlyle <benjamincarlyle@soundadvice.id.au> dated 31 July 2012 17:15
 
-/*global URI, module, test */
+/*global URI, module, test, document */
 module("greenbytes");
 
 var resolver = function (baseURI, relative) {
@@ -17,9 +17,13 @@ test("simplecssreversed - this test should fail to parse", function () {
 
 	var baseURI = new URI("http://base.example.com/test.html");
 
-	var link = weblinking.parse("rel=stylesheet; <fail.css>");
+	var link = weblinking.parseHeader("rel=stylesheet; <fail.css>");
 	var rel = link.getLinkValuesByRel("stylesheet");
 	strictEqual(rel.length, 0, "wrong count");
+
+	var testDiv = document.getElementById('test');
+	testDiv.innerHTML = link.toHTML();
+	strictEqual(testDiv.innerHTML, link.toHTML(), "Round trip via innerHTML");
 });
 
 test("simplecsssq - this test should fail to parse", function () {
@@ -29,9 +33,13 @@ test("simplecsssq - this test should fail to parse", function () {
 
 	var baseURI = new URI("http://base.example.com/test.html");
 
-	var link = weblinking.parse("<fail.css>; rel='stylesheet'");
+	var link = weblinking.parseHeader("<fail.css>; rel='stylesheet'");
 	var rel = link.getLinkValuesByRel("stylesheet");
 	strictEqual(rel.length, 0, "wrong count");
+
+	var testDiv = document.getElementById('test');
+	testDiv.innerHTML = link.toHTML();
+	strictEqual(testDiv.innerHTML, link.toHTML(), "Round trip via innerHTML");
 });
 
 test("simplecssmrel", function () {
@@ -41,21 +49,25 @@ test("simplecssmrel", function () {
 
 	var baseURI = new URI("http://base.example.com/test.html");
 
-	var link = weblinking.parse("<simple.css>; rel=\"foobar stylesheet\"");
+	var link = weblinking.parseHeader("<simple.css>; rel=\"foobar stylesheet\"");
 	var rel = link.getLinkValuesByRel("stylesheet");
 	strictEqual(rel.length, 1, "wrong count");
-	strictEqual(rel[0].urireference, "simple.css", "wrong uri");
+	strictEqual(rel[0].href, "simple.css", "wrong uri");
 	strictEqual(rel[0].rel.value, "foobar stylesheet", "wrong rel");
 	strictEqual(rel[0].rel.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].rel.language, "", "wrong language");
 	strictEqual(rel[0].resolve(baseURI, resolver).toString(), "http://base.example.com/simple.css", "wrong resovled URI");
 	rel = link.getLinkValuesByRel("foobar");
 	strictEqual(rel.length, 1, "wrong count");
-	strictEqual(rel[0].urireference, "simple.css", "wrong uri");
+	strictEqual(rel[0].href, "simple.css", "wrong uri");
 	strictEqual(rel[0].rel.value, "foobar stylesheet", "wrong rel");
 	strictEqual(rel[0].rel.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].rel.language, "", "wrong language");
 	strictEqual(rel[0].resolve(baseURI, resolver).toString(), "http://base.example.com/simple.css", "wrong resovled URI");
+
+	var testDiv = document.getElementById('test');
+	testDiv.innerHTML = link.toHTML();
+	strictEqual(testDiv.innerHTML, link.toHTML(), "Round trip via innerHTML");
 });
 
 test("simplecssmlink", function () {
@@ -65,21 +77,25 @@ test("simplecssmlink", function () {
 
 	var baseURI = new URI("http://base.example.com/test.html");
 
-	var link = weblinking.parse("<foo>; rel=bar, <simple.css>; rel=stylesheet");
+	var link = weblinking.parseHeader("<foo>; rel=bar, <simple.css>; rel=stylesheet");
 	var rel = link.getLinkValuesByRel("stylesheet");
 	strictEqual(rel.length, 1, "wrong count");
-	strictEqual(rel[0].urireference, "simple.css", "wrong uri");
+	strictEqual(rel[0].href, "simple.css", "wrong uri");
 	strictEqual(rel[0].rel.value, "stylesheet", "wrong rel");
 	strictEqual(rel[0].rel.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].rel.language, "", "wrong language");
 	strictEqual(rel[0].resolve(baseURI, resolver).toString(), "http://base.example.com/simple.css", "wrong resovled URI");
 	rel = link.getLinkValuesByRel("bar");
 	strictEqual(rel.length, 1, "wrong count");
-	strictEqual(rel[0].urireference, "foo", "wrong uri");
+	strictEqual(rel[0].href, "foo", "wrong uri");
 	strictEqual(rel[0].rel.value, "bar", "wrong rel");
 	strictEqual(rel[0].rel.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].rel.language, "", "wrong language");
 	strictEqual(rel[0].resolve(baseURI, resolver).toString(), "http://base.example.com/foo", "wrong resovled URI");
+
+	var testDiv = document.getElementById('test');
+	testDiv.innerHTML = link.toHTML();
+	strictEqual(testDiv.innerHTML, link.toHTML(), "Round trip via innerHTML");
 });
 
 test("simplecssanchr", function () {
@@ -89,10 +105,10 @@ test("simplecssanchr", function () {
 
 	var baseURI = new URI("http://base.example.com/test.html");
 
-	var link = weblinking.parse("<fail.css>; anchor=\"http://example.com/\"; rel=stylesheet");
+	var link = weblinking.parseHeader("<fail.css>; anchor=\"http://example.com/\"; rel=stylesheet");
 	var rel = link.getLinkValuesByRel("stylesheet");
 	strictEqual(rel.length, 1, "wrong count");
-	strictEqual(rel[0].urireference, "fail.css", "wrong uri");
+	strictEqual(rel[0].href, "fail.css", "wrong uri");
 	strictEqual(rel[0].anchor.value, "http://example.com/", "wrong anchor");
 	strictEqual(rel[0].anchor.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].anchor.language, "", "wrong language");
@@ -100,6 +116,10 @@ test("simplecssanchr", function () {
 	strictEqual(rel[0].rel.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].rel.language, "", "wrong language");
 	strictEqual(rel[0].resolve(baseURI, resolver).toString(), "http://example.com/fail.css", "wrong resovled URI");
+
+	var testDiv = document.getElementById('test');
+	testDiv.innerHTML = link.toHTML();
+	strictEqual(testDiv.innerHTML, link.toHTML(), "Round trip via innerHTML");
 });
 
 test("simplecssanchrsame", function () {
@@ -109,10 +129,10 @@ test("simplecssanchrsame", function () {
 
 	var baseURI = new URI("http://base.example.com/test.html");
 
-	var link = weblinking.parse("<simple.css>; anchor=\"\"; rel=stylesheet");
+	var link = weblinking.parseHeader("<simple.css>; anchor=\"\"; rel=stylesheet");
 	var rel = link.getLinkValuesByRel("stylesheet");
 	strictEqual(rel.length, 1, "wrong count");
-	strictEqual(rel[0].urireference, "simple.css", "wrong uri");
+	strictEqual(rel[0].href, "simple.css", "wrong uri");
 	strictEqual(rel[0].anchor.value, "", "wrong anchor");
 	strictEqual(rel[0].anchor.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].anchor.language, "", "wrong language");
@@ -120,6 +140,10 @@ test("simplecssanchrsame", function () {
 	strictEqual(rel[0].rel.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].rel.language, "", "wrong language");
 	strictEqual(rel[0].resolve(baseURI, resolver).toString(), "http://base.example.com/simple.css", "wrong resovled URI");
+
+	var testDiv = document.getElementById('test');
+	testDiv.innerHTML = link.toHTML();
+	strictEqual(testDiv.innerHTML, link.toHTML(), "Round trip via innerHTML");
 });
 
 test("simplecssanchrsame2", function () {
@@ -129,10 +153,10 @@ test("simplecssanchrsame2", function () {
 
 	var baseURI = new URI("http://base.example.com/test.html");
 
-	var link = weblinking.parse("<simple.css>; anchor=\"\"; rel=stylesheet");
+	var link = weblinking.parseHeader("<simple.css>; anchor=\"\"; rel=stylesheet");
 	var rel = link.getLinkValuesByRel("stylesheet");
 	strictEqual(rel.length, 1, "wrong count");
-	strictEqual(rel[0].urireference, "simple.css", "wrong uri");
+	strictEqual(rel[0].href, "simple.css", "wrong uri");
 	strictEqual(rel[0].anchor.value, "", "wrong anchor");
 	strictEqual(rel[0].anchor.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].anchor.language, "", "wrong language");
@@ -140,6 +164,10 @@ test("simplecssanchrsame2", function () {
 	strictEqual(rel[0].rel.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].rel.language, "", "wrong language");
 	strictEqual(rel[0].resolve(baseURI, resolver).toString(), "http://base.example.com/simple.css", "wrong resovled URI");
+
+	var testDiv = document.getElementById('test');
+	testDiv.innerHTML = link.toHTML();
+	strictEqual(testDiv.innerHTML, link.toHTML(), "Round trip via innerHTML");
 });
 
 test("simplecssanchrsamefrag", function () {
@@ -149,10 +177,10 @@ test("simplecssanchrsamefrag", function () {
 
 	var baseURI = new URI("http://base.example.com/test.html");
 
-	var link = weblinking.parse("<fail.css>; anchor=\"#foo\"; rel=stylesheet");
+	var link = weblinking.parseHeader("<fail.css>; anchor=\"#foo\"; rel=stylesheet");
 	var rel = link.getLinkValuesByRel("stylesheet");
 	strictEqual(rel.length, 1, "wrong count");
-	strictEqual(rel[0].urireference, "fail.css", "wrong uri");
+	strictEqual(rel[0].href, "fail.css", "wrong uri");
 	strictEqual(rel[0].anchor.value, "#foo", "wrong anchor");
 	strictEqual(rel[0].anchor.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].anchor.language, "", "wrong language");
@@ -160,6 +188,10 @@ test("simplecssanchrsamefrag", function () {
 	strictEqual(rel[0].rel.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].rel.language, "", "wrong language");
 	strictEqual(rel[0].resolve(baseURI, resolver).toString(), "http://base.example.com/fail.css", "wrong resovled URI");
+
+	var testDiv = document.getElementById('test');
+	testDiv.innerHTML = link.toHTML();
+	strictEqual(testDiv.innerHTML, link.toHTML(), "Round trip via innerHTML");
 });
 
 test("simplecssanchrsamefrag2", function () {
@@ -169,10 +201,10 @@ test("simplecssanchrsamefrag2", function () {
 
 	var baseURI = new URI("http://base.example.com/test.html");
 
-	var link = weblinking.parse("<fail.css>; anchor=\"#foo\"; rel=stylesheet");
+	var link = weblinking.parseHeader("<fail.css>; anchor=\"#foo\"; rel=stylesheet");
 	var rel = link.getLinkValuesByRel("stylesheet");
 	strictEqual(rel.length, 1, "wrong count");
-	strictEqual(rel[0].urireference, "fail.css", "wrong uri");
+	strictEqual(rel[0].href, "fail.css", "wrong uri");
 	strictEqual(rel[0].anchor.value, "#foo", "wrong anchor");
 	strictEqual(rel[0].anchor.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].anchor.language, "", "wrong language");
@@ -180,6 +212,10 @@ test("simplecssanchrsamefrag2", function () {
 	strictEqual(rel[0].rel.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].rel.language, "", "wrong language");
 	strictEqual(rel[0].resolve(baseURI, resolver).toString(), "http://base.example.com/fail.css", "wrong resovled URI");
+
+	var testDiv = document.getElementById('test');
+	testDiv.innerHTML = link.toHTML();
+	strictEqual(testDiv.innerHTML, link.toHTML(), "Round trip via innerHTML");
 });
 
 test(" simplexslttypenotype", function () {
@@ -189,14 +225,18 @@ test(" simplexslttypenotype", function () {
 
 	var baseURI = new URI("http://base.example.com/test.html");
 
-	var link = weblinking.parse("<simple.xslt>; rel=stylesheet");
+	var link = weblinking.parseHeader("<simple.xslt>; rel=stylesheet");
 	var rel = link.getLinkValuesByRel("stylesheet");
 	strictEqual(rel.length, 1, "wrong count");
-	strictEqual(rel[0].urireference, "simple.xslt", "wrong uri");
+	strictEqual(rel[0].href, "simple.xslt", "wrong uri");
 	strictEqual(rel[0].rel.value, "stylesheet", "wrong rel");
 	strictEqual(rel[0].rel.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].rel.language, "", "wrong language");
 	strictEqual(rel[0].resolve(baseURI, resolver).toString(), "http://base.example.com/simple.xslt", "wrong resovled URI");
+
+	var testDiv = document.getElementById('test');
+	testDiv.innerHTML = link.toHTML();
+	strictEqual(testDiv.innerHTML, link.toHTML(), "Round trip via innerHTML");
 });
 
 test("simplexslttypedepr", function () {
@@ -206,10 +246,10 @@ test("simplexslttypedepr", function () {
 
 	var baseURI = new URI("http://base.example.com/test.html");
 
-	var link = weblinking.parse("<simple.xslt>; rel=stylesheet; type=\"text/xsl\"");
+	var link = weblinking.parseHeader("<simple.xslt>; rel=stylesheet; type=\"text/xsl\"");
 	var rel = link.getLinkValuesByRel("stylesheet");
 	strictEqual(rel.length, 1, "wrong count");
-	strictEqual(rel[0].urireference, "simple.xslt", "wrong uri");
+	strictEqual(rel[0].href, "simple.xslt", "wrong uri");
 	strictEqual(rel[0].type.value, "text/xsl", "wrong type");
 	strictEqual(rel[0].type.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].type.language, "", "wrong language");
@@ -217,6 +257,10 @@ test("simplexslttypedepr", function () {
 	strictEqual(rel[0].rel.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].rel.language, "", "wrong language");
 	strictEqual(rel[0].resolve(baseURI, resolver).toString(), "http://base.example.com/simple.xslt", "wrong resovled URI");
+
+	var testDiv = document.getElementById('test');
+	testDiv.innerHTML = link.toHTML();
+	strictEqual(testDiv.innerHTML, link.toHTML(), "Round trip via innerHTML");
 });
 
 test("simplexslttypedepr2", function () {
@@ -226,10 +270,10 @@ test("simplexslttypedepr2", function () {
 
 	var baseURI = new URI("http://base.example.com/test.html");
 
-	var link = weblinking.parse("<simple.xslt.asis>; rel=stylesheet; type=\"text/xsl\"");
+	var link = weblinking.parseHeader("<simple.xslt.asis>; rel=stylesheet; type=\"text/xsl\"");
 	var rel = link.getLinkValuesByRel("stylesheet");
 	strictEqual(rel.length, 1, "wrong count");
-	strictEqual(rel[0].urireference, "simple.xslt.asis", "wrong uri");
+	strictEqual(rel[0].href, "simple.xslt.asis", "wrong uri");
 	strictEqual(rel[0].type.value, "text/xsl", "wrong type");
 	strictEqual(rel[0].type.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].type.language, "", "wrong language");
@@ -237,6 +281,10 @@ test("simplexslttypedepr2", function () {
 	strictEqual(rel[0].rel.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].rel.language, "", "wrong language");
 	strictEqual(rel[0].resolve(baseURI, resolver).toString(), "http://base.example.com/simple.xslt.asis", "wrong resovled URI");
+
+	var testDiv = document.getElementById('test');
+	testDiv.innerHTML = link.toHTML();
+	strictEqual(testDiv.innerHTML, link.toHTML(), "Round trip via innerHTML");
 });
 
 test("simplexslttypeoff", function () {
@@ -246,10 +294,10 @@ test("simplexslttypeoff", function () {
 
 	var baseURI = new URI("http://base.example.com/test.html");
 
-	var link = weblinking.parse("<simple.xslt>; rel=stylesheet; type=\"application/xslt+xml\"");
+	var link = weblinking.parseHeader("<simple.xslt>; rel=stylesheet; type=\"application/xslt+xml\"");
 	var rel = link.getLinkValuesByRel("stylesheet");
 	strictEqual(rel.length, 1, "wrong count");
-	strictEqual(rel[0].urireference, "simple.xslt", "wrong uri");
+	strictEqual(rel[0].href, "simple.xslt", "wrong uri");
 	strictEqual(rel[0].type.value, "application/xslt+xml", "wrong type");
 	strictEqual(rel[0].type.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].type.language, "", "wrong language");
@@ -257,6 +305,10 @@ test("simplexslttypeoff", function () {
 	strictEqual(rel[0].rel.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].rel.language, "", "wrong language");
 	strictEqual(rel[0].resolve(baseURI, resolver).toString(), "http://base.example.com/simple.xslt", "wrong resovled URI");
+
+	var testDiv = document.getElementById('test');
+	testDiv.innerHTML = link.toHTML();
+	strictEqual(testDiv.innerHTML, link.toHTML(), "Round trip via innerHTML");
 });
 
 test("simplecsstitle", function () {
@@ -266,10 +318,10 @@ test("simplecsstitle", function () {
 
 	var baseURI = new URI("http://base.example.com/test.html");
 
-	var link = weblinking.parse("<simple.css>; rel=stylesheet; title=\"A simple CSS stylesheet\"");
+	var link = weblinking.parseHeader("<simple.css>; rel=stylesheet; title=\"A simple CSS stylesheet\"");
 	var rel = link.getLinkValuesByRel("stylesheet");
 	strictEqual(rel.length, 1, "wrong count");
-	strictEqual(rel[0].urireference, "simple.css", "wrong uri");
+	strictEqual(rel[0].href, "simple.css", "wrong uri");
 	strictEqual(rel[0].title.value, "A simple CSS stylesheet", "wrong title");
 	strictEqual(rel[0].title.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].title.language, "", "wrong language");
@@ -277,6 +329,10 @@ test("simplecsstitle", function () {
 	strictEqual(rel[0].rel.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].rel.language, "", "wrong language");
 	strictEqual(rel[0].resolve(baseURI, resolver).toString(), "http://base.example.com/simple.css", "wrong resovled URI");
+
+	var testDiv = document.getElementById('test');
+	testDiv.innerHTML = link.toHTML();
+	strictEqual(testDiv.innerHTML, link.toHTML(), "Round trip via innerHTML");
 });
 
 test("simplecsstitleq", function () {
@@ -286,10 +342,10 @@ test("simplecsstitleq", function () {
 
 	var baseURI = new URI("http://base.example.com/test.html");
 
-	var link = weblinking.parse("<simple.css>; rel=stylesheet; title=\"title with a DQUOTE \\\" and backslash: \\\\\"");
+	var link = weblinking.parseHeader("<simple.css>; rel=stylesheet; title=\"title with a DQUOTE \\\" and backslash: \\\\\"");
 	var rel = link.getLinkValuesByRel("stylesheet");
 	strictEqual(rel.length, 1, "wrong count");
-	strictEqual(rel[0].urireference, "simple.css", "wrong uri");
+	strictEqual(rel[0].href, "simple.css", "wrong uri");
 	strictEqual(rel[0].title.value, "title with a DQUOTE \" and backslash: \\", "wrong title");
 	strictEqual(rel[0].title.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].title.language, "", "wrong language");
@@ -297,6 +353,10 @@ test("simplecsstitleq", function () {
 	strictEqual(rel[0].rel.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].rel.language, "", "wrong language");
 	strictEqual(rel[0].resolve(baseURI, resolver).toString(), "http://base.example.com/simple.css", "wrong resovled URI");
+
+	var testDiv = document.getElementById('test');
+	testDiv.innerHTML = link.toHTML();
+	strictEqual(testDiv.innerHTML, link.toHTML(), "Round trip via innerHTML");
 });
 
 test("simplecsstitleq2", function () {
@@ -306,10 +366,10 @@ test("simplecsstitleq2", function () {
 
 	var baseURI = new URI("http://base.example.com/test.html");
 
-	var link = weblinking.parse("<simple.css>; title=\"title with a DQUOTE \\\" and backslash: \\\\\"; rel=stylesheet");
+	var link = weblinking.parseHeader("<simple.css>; title=\"title with a DQUOTE \\\" and backslash: \\\\\"; rel=stylesheet");
 	var rel = link.getLinkValuesByRel("stylesheet");
 	strictEqual(rel.length, 1, "wrong count");
-	strictEqual(rel[0].urireference, "simple.css", "wrong uri");
+	strictEqual(rel[0].href, "simple.css", "wrong uri");
 	strictEqual(rel[0].title.value, "title with a DQUOTE \" and backslash: \\", "wrong title");
 	strictEqual(rel[0].title.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].title.language, "", "wrong language");
@@ -317,6 +377,10 @@ test("simplecsstitleq2", function () {
 	strictEqual(rel[0].rel.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].rel.language, "", "wrong language");
 	strictEqual(rel[0].resolve(baseURI, resolver).toString(), "http://base.example.com/simple.css", "wrong resovled URI");
+
+	var testDiv = document.getElementById('test');
+	testDiv.innerHTML = link.toHTML();
+	strictEqual(testDiv.innerHTML, link.toHTML(), "Round trip via innerHTML");
 });
 
 test("simplecsstitletok", function () {
@@ -326,10 +390,10 @@ test("simplecsstitletok", function () {
 
 	var baseURI = new URI("http://base.example.com/test.html");
 
-	var link = weblinking.parse("<simple.css>; rel=stylesheet; title=AsimpleCSSstylesheet");
+	var link = weblinking.parseHeader("<simple.css>; rel=stylesheet; title=AsimpleCSSstylesheet");
 	var rel = link.getLinkValuesByRel("stylesheet");
 	strictEqual(rel.length, 1, "wrong count");
-	strictEqual(rel[0].urireference, "simple.css", "wrong uri");
+	strictEqual(rel[0].href, "simple.css", "wrong uri");
 	strictEqual(rel[0].title.value, "AsimpleCSSstylesheet", "wrong title");
 	strictEqual(rel[0].title.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].title.language, "", "wrong language");
@@ -337,6 +401,10 @@ test("simplecsstitletok", function () {
 	strictEqual(rel[0].rel.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].rel.language, "", "wrong language");
 	strictEqual(rel[0].resolve(baseURI, resolver).toString(), "http://base.example.com/simple.css", "wrong resovled URI");
+
+	var testDiv = document.getElementById('test');
+	testDiv.innerHTML = link.toHTML();
+	strictEqual(testDiv.innerHTML, link.toHTML(), "Round trip via innerHTML");
 });
 
 test("simplecsstitle5987", function () {
@@ -346,10 +414,10 @@ test("simplecsstitle5987", function () {
 
 	var baseURI = new URI("http://base.example.com/test.html");
 
-	var link = weblinking.parse("<simple.css>; rel=stylesheet; title*=UTF-8''stylesheet-%E2%82%AC");
+	var link = weblinking.parseHeader("<simple.css>; rel=stylesheet; title*=UTF-8''stylesheet-%E2%82%AC");
 	var rel = link.getLinkValuesByRel("stylesheet");
 	strictEqual(rel.length, 1, "wrong count");
-	strictEqual(rel[0].urireference, "simple.css", "wrong uri");
+	strictEqual(rel[0].href, "simple.css", "wrong uri");
 	strictEqual(rel[0].title.value, "stylesheet-\u20AC", "wrong title");
 	strictEqual(rel[0].title.charset, "UTF-8", "wrong charset");
 	strictEqual(rel[0].title.language, "", "wrong language");
@@ -357,6 +425,10 @@ test("simplecsstitle5987", function () {
 	strictEqual(rel[0].rel.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].rel.language, "", "wrong language");
 	strictEqual(rel[0].resolve(baseURI, resolver).toString(), "http://base.example.com/simple.css", "wrong resovled URI");
+
+	var testDiv = document.getElementById('test');
+	testDiv.innerHTML = link.toHTML();
+	strictEqual(testDiv.innerHTML, link.toHTML(), "Round trip via innerHTML");
 });
 
 test("simplecsstitle5987r", function () {
@@ -366,10 +438,10 @@ test("simplecsstitle5987r", function () {
 
 	var baseURI = new URI("http://base.example.com/test.html");
 
-	var link = weblinking.parse("<simple.css>; title*=UTF-8''stylesheet-%E2%82%AC; rel=stylesheet");
+	var link = weblinking.parseHeader("<simple.css>; title*=UTF-8''stylesheet-%E2%82%AC; rel=stylesheet");
 	var rel = link.getLinkValuesByRel("stylesheet");
 	strictEqual(rel.length, 1, "wrong count");
-	strictEqual(rel[0].urireference, "simple.css", "wrong uri");
+	strictEqual(rel[0].href, "simple.css", "wrong uri");
 	strictEqual(rel[0].title.value, "stylesheet-\u20AC", "wrong title");
 	strictEqual(rel[0].title.charset, "UTF-8", "wrong charset");
 	strictEqual(rel[0].title.language, "", "wrong language");
@@ -377,6 +449,10 @@ test("simplecsstitle5987r", function () {
 	strictEqual(rel[0].rel.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].rel.language, "", "wrong language");
 	strictEqual(rel[0].resolve(baseURI, resolver).toString(), "http://base.example.com/simple.css", "wrong resovled URI");
+
+	var testDiv = document.getElementById('test');
+	testDiv.innerHTML = link.toHTML();
+	strictEqual(testDiv.innerHTML, link.toHTML(), "Round trip via innerHTML");
 });
 
 test("simplecsstitle5987iso88591", function () {
@@ -386,10 +462,10 @@ test("simplecsstitle5987iso88591", function () {
 
 	var baseURI = new URI("http://base.example.com/test.html");
 
-	var link = weblinking.parse("<simple.css>; title*=iso-8859-1''stylesheet-%E4; title=\"fallback title\"; rel=stylesheet");
+	var link = weblinking.parseHeader("<simple.css>; title*=iso-8859-1''stylesheet-%E4; title=\"fallback title\"; rel=stylesheet");
 	var rel = link.getLinkValuesByRel("stylesheet");
 	strictEqual(rel.length, 1, "wrong count");
-	strictEqual(rel[0].urireference, "simple.css", "wrong uri");
+	strictEqual(rel[0].href, "simple.css", "wrong uri");
 	/* We don't support non-UTF-8 encodings.
 	strictEqual(rel[0].title.value, "stylesheet-\u00E4", "wrong title");
 	strictEqual(rel[0].title.charset, "iso8859-1", "wrong charset");
@@ -399,6 +475,10 @@ test("simplecsstitle5987iso88591", function () {
 	strictEqual(rel[0].rel.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].rel.language, "", "wrong language");
 	strictEqual(rel[0].resolve(baseURI, resolver).toString(), "http://base.example.com/simple.css", "wrong resovled URI");
+
+	var testDiv = document.getElementById('test');
+	testDiv.innerHTML = link.toHTML();
+	strictEqual(testDiv.innerHTML, link.toHTML(), "Round trip via innerHTML");
 });
 
 test("simplecsstitle5987noenc", function () {
@@ -408,10 +488,10 @@ test("simplecsstitle5987noenc", function () {
 
 	var baseURI = new URI("http://base.example.com/test.html");
 
-	var link = weblinking.parse("<simple.css>; title*=''A%20simple%20CSS%20stylesheet; title=\"fallback title\"; rel=stylesheet");
+	var link = weblinking.parseHeader("<simple.css>; title*=''A%20simple%20CSS%20stylesheet; title=\"fallback title\"; rel=stylesheet");
 	var rel = link.getLinkValuesByRel("stylesheet");
 	strictEqual(rel.length, 1, "wrong count");
-	strictEqual(rel[0].urireference, "simple.css", "wrong uri");
+	strictEqual(rel[0].href, "simple.css", "wrong uri");
 	strictEqual(rel[0].title.value, "fallback title", "wrong title");
 	strictEqual(rel[0].title.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].title.language, "", "wrong language");
@@ -419,6 +499,10 @@ test("simplecsstitle5987noenc", function () {
 	strictEqual(rel[0].rel.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].rel.language, "", "wrong language");
 	strictEqual(rel[0].resolve(baseURI, resolver).toString(), "http://base.example.com/simple.css", "wrong resovled URI");
+
+	var testDiv = document.getElementById('test');
+	testDiv.innerHTML = link.toHTML();
+	strictEqual(testDiv.innerHTML, link.toHTML(), "Round trip via innerHTML");
 });
 
 test("simplecsstitle5987invenc", function () {
@@ -428,10 +512,10 @@ test("simplecsstitle5987invenc", function () {
 
 	var baseURI = new URI("http://base.example.com/test.html");
 
-	var link = weblinking.parse("<simple.css>; title*=foobar''A%20simple%20CSS%20stylesheet; title=\"fallback title\"; rel=stylesheet");
+	var link = weblinking.parseHeader("<simple.css>; title*=foobar''A%20simple%20CSS%20stylesheet; title=\"fallback title\"; rel=stylesheet");
 	var rel = link.getLinkValuesByRel("stylesheet");
 	strictEqual(rel.length, 1, "wrong count");
-	strictEqual(rel[0].urireference, "simple.css", "wrong uri");
+	strictEqual(rel[0].href, "simple.css", "wrong uri");
 	strictEqual(rel[0].title.value, "fallback title", "wrong title");
 	strictEqual(rel[0].title.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].title.language, "", "wrong language");
@@ -439,6 +523,10 @@ test("simplecsstitle5987invenc", function () {
 	strictEqual(rel[0].rel.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].rel.language, "", "wrong language");
 	strictEqual(rel[0].resolve(baseURI, resolver).toString(), "http://base.example.com/simple.css", "wrong resovled URI");
+
+	var testDiv = document.getElementById('test');
+	testDiv.innerHTML = link.toHTML();
+	strictEqual(testDiv.innerHTML, link.toHTML(), "Round trip via innerHTML");
 });
 
 test("simplecsstitle5987parseerror", function () {
@@ -448,10 +536,10 @@ test("simplecsstitle5987parseerror", function () {
 
 	var baseURI = new URI("http://base.example.com/test.html");
 
-	var link = weblinking.parse("<simple.css>; title*=foobar; title=\"fallback title\"; rel=stylesheet");
+	var link = weblinking.parseHeader("<simple.css>; title*=foobar; title=\"fallback title\"; rel=stylesheet");
 	var rel = link.getLinkValuesByRel("stylesheet");
 	strictEqual(rel.length, 1, "wrong count");
-	strictEqual(rel[0].urireference, "simple.css", "wrong uri");
+	strictEqual(rel[0].href, "simple.css", "wrong uri");
 	strictEqual(rel[0].title.value, "fallback title", "wrong title");
 	strictEqual(rel[0].title.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].title.language, "", "wrong language");
@@ -459,6 +547,10 @@ test("simplecsstitle5987parseerror", function () {
 	strictEqual(rel[0].rel.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].rel.language, "", "wrong language");
 	strictEqual(rel[0].resolve(baseURI, resolver).toString(), "http://base.example.com/simple.css", "wrong resovled URI");
+
+	var testDiv = document.getElementById('test');
+	testDiv.innerHTML = link.toHTML();
+	strictEqual(testDiv.innerHTML, link.toHTML(), "Round trip via innerHTML");
 });
 
 test("simplecsstitle5987parseerror2", function () {
@@ -468,10 +560,10 @@ test("simplecsstitle5987parseerror2", function () {
 
 	var baseURI = new URI("http://base.example.com/test.html");
 
-	var link = weblinking.parse("<simple.css>; title*=UTF-8''foobar%; title=\"fallback title\"; rel=stylesheet");
+	var link = weblinking.parseHeader("<simple.css>; title*=UTF-8''foobar%; title=\"fallback title\"; rel=stylesheet");
 	var rel = link.getLinkValuesByRel("stylesheet");
 	strictEqual(rel.length, 1, "wrong count");
-	strictEqual(rel[0].urireference, "simple.css", "wrong uri");
+	strictEqual(rel[0].href, "simple.css", "wrong uri");
 	strictEqual(rel[0].title.value, "fallback title", "wrong title");
 	strictEqual(rel[0].title.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].title.language, "", "wrong language");
@@ -479,6 +571,10 @@ test("simplecsstitle5987parseerror2", function () {
 	strictEqual(rel[0].rel.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].rel.language, "", "wrong language");
 	strictEqual(rel[0].resolve(baseURI, resolver).toString(), "http://base.example.com/simple.css", "wrong resovled URI");
+
+	var testDiv = document.getElementById('test');
+	testDiv.innerHTML = link.toHTML();
+	strictEqual(testDiv.innerHTML, link.toHTML(), "Round trip via innerHTML");
 });
 
 test("simpleext", function () {
@@ -488,10 +584,10 @@ test("simpleext", function () {
 
 	var baseURI = new URI("http://base.example.com/test.html");
 
-	var link = weblinking.parse("<simple.css>; ext=foo; rel=stylesheet");
+	var link = weblinking.parseHeader("<simple.css>; ext=foo; rel=stylesheet");
 	var rel = link.getLinkValuesByRel("stylesheet");
 	strictEqual(rel.length, 1, "wrong count");
-	strictEqual(rel[0].urireference, "simple.css", "wrong uri");
+	strictEqual(rel[0].href, "simple.css", "wrong uri");
 	// "ext" is quoted here for the benefit of the closure compiler
 	strictEqual(rel[0]["ext"].value, "foo", "wrong ext");
 	strictEqual(rel[0]["ext"].charset, "US-ASCII", "wrong charset");
@@ -500,6 +596,10 @@ test("simpleext", function () {
 	strictEqual(rel[0].rel.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].rel.language, "", "wrong language");
 	strictEqual(rel[0].resolve(baseURI, resolver).toString(), "http://base.example.com/simple.css", "wrong resovled URI");
+
+	var testDiv = document.getElementById('test');
+	testDiv.innerHTML = link.toHTML();
+	strictEqual(testDiv.innerHTML, link.toHTML(), "Round trip via innerHTML");
 });
 
 test("simpleextq", function () {
@@ -509,10 +609,10 @@ test("simpleextq", function () {
 
 	var baseURI = new URI("http://base.example.com/test.html");
 
-	var link = weblinking.parse("<simple.css>; ext=\"\\\"\"; rel=stylesheet");
+	var link = weblinking.parseHeader("<simple.css>; ext=\"\\\"\"; rel=stylesheet");
 	var rel = link.getLinkValuesByRel("stylesheet");
 	strictEqual(rel.length, 1, "wrong count");
-	strictEqual(rel[0].urireference, "simple.css", "wrong uri");
+	strictEqual(rel[0].href, "simple.css", "wrong uri");
 	//"ext" is quoted here for the benefit of the closure compiler
 	strictEqual(rel[0]["ext"].value, "\"", "wrong ext");
 	strictEqual(rel[0]["ext"].charset, "US-ASCII", "wrong charset");
@@ -521,6 +621,10 @@ test("simpleextq", function () {
 	strictEqual(rel[0].rel.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].rel.language, "", "wrong language");
 	strictEqual(rel[0].resolve(baseURI, resolver).toString(), "http://base.example.com/simple.css", "wrong resovled URI");
+
+	var testDiv = document.getElementById('test');
+	testDiv.innerHTML = link.toHTML();
+	strictEqual(testDiv.innerHTML, link.toHTML(), "Round trip via innerHTML");
 });
 
 test("simpleexta", function () {
@@ -530,10 +634,10 @@ test("simpleexta", function () {
 
 	var baseURI = new URI("http://base.example.com/test.html");
 
-	var link = weblinking.parse("<simple.css>; ext1='start; rel=stylesheet; ext2=end'");
+	var link = weblinking.parseHeader("<simple.css>; ext1='start; rel=stylesheet; ext2=end'");
 	var rel = link.getLinkValuesByRel("stylesheet");
 	strictEqual(rel.length, 1, "wrong count");
-	strictEqual(rel[0].urireference, "simple.css", "wrong uri");
+	strictEqual(rel[0].href, "simple.css", "wrong uri");
 	strictEqual(rel[0].rel.value, "stylesheet", "wrong rel");
 	strictEqual(rel[0].rel.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].rel.language, "", "wrong language");
@@ -545,6 +649,10 @@ test("simpleexta", function () {
 	strictEqual(rel[0]["ext2"].charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0]["ext2"].language, "", "wrong language");
 	strictEqual(rel[0].resolve(baseURI, resolver).toString(), "http://base.example.com/simple.css", "wrong resovled URI");
+
+	var testDiv = document.getElementById('test');
+	testDiv.innerHTML = link.toHTML();
+	strictEqual(testDiv.innerHTML, link.toHTML(), "Round trip via innerHTML");
 });
 
 test("simpleextrel", function () {
@@ -554,20 +662,24 @@ test("simpleextrel", function () {
 
 	var baseURI = new URI("http://base.example.com/test.html");
 
-	var link = weblinking.parse("<simple.css>; rel=\"http://example.com/myrel stylesheet\"");
+	var link = weblinking.parseHeader("<simple.css>; rel=\"http://example.com/myrel stylesheet\"");
 	var rel = link.getLinkValuesByRel("stylesheet");
 	strictEqual(rel.length, 1, "wrong count");
-	strictEqual(rel[0].urireference, "simple.css", "wrong uri");
+	strictEqual(rel[0].href, "simple.css", "wrong uri");
 	strictEqual(rel[0].rel.value, "http://example.com/myrel stylesheet", "wrong rel");
 	strictEqual(rel[0].rel.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].rel.language, "", "wrong language");
 	rel = link.getLinkValuesByRel("http://example.com/myrel");
 	strictEqual(rel.length, 1, "wrong count");
-	strictEqual(rel[0].urireference, "simple.css", "wrong uri");
+	strictEqual(rel[0].href, "simple.css", "wrong uri");
 	strictEqual(rel[0].rel.value, "http://example.com/myrel stylesheet", "wrong rel");
 	strictEqual(rel[0].rel.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].rel.language, "", "wrong language");
 	strictEqual(rel[0].resolve(baseURI, resolver).toString(), "http://base.example.com/simple.css", "wrong resovled URI");
+
+	var testDiv = document.getElementById('test');
+	testDiv.innerHTML = link.toHTML();
+	strictEqual(testDiv.innerHTML, link.toHTML(), "Round trip via innerHTML");
 });
 
 test("simplecss2", function () {
@@ -577,19 +689,23 @@ test("simplecss2", function () {
 
 	var baseURI = new URI("http://base.example.com/test.html");
 
-	var link = weblinking.parse("<ybg.css>; rel=stylesheet, <simple.css>; rel=stylesheet");
+	var link = weblinking.parseHeader("<ybg.css>; rel=stylesheet, <simple.css>; rel=stylesheet");
 	var rel = link.getLinkValuesByRel("stylesheet");
 	strictEqual(rel.length, 2, "wrong count");
-	strictEqual(rel[0].urireference, "ybg.css", "wrong uri");
+	strictEqual(rel[0].href, "ybg.css", "wrong uri");
 	strictEqual(rel[0].rel.value, "stylesheet", "wrong rel");
 	strictEqual(rel[0].rel.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].rel.language, "", "wrong language");
 	strictEqual(rel[0].resolve(baseURI, resolver).toString(), "http://base.example.com/ybg.css", "wrong resovled URI");
-	strictEqual(rel[1].urireference, "simple.css", "wrong uri");
+	strictEqual(rel[1].href, "simple.css", "wrong uri");
 	strictEqual(rel[1].rel.value, "stylesheet", "wrong rel");
 	strictEqual(rel[1].rel.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[1].rel.language, "", "wrong language");
 	strictEqual(rel[1].resolve(baseURI, resolver).toString(), "http://base.example.com/simple.css", "wrong resovled URI");
+
+	var testDiv = document.getElementById('test');
+	testDiv.innerHTML = link.toHTML();
+	strictEqual(testDiv.innerHTML, link.toHTML(), "Round trip via innerHTML");
 });
 
 test("simplecssafterother", function () {
@@ -599,20 +715,24 @@ test("simplecssafterother", function () {
 
 	var baseURI = new URI("http://base.example.com/test.html");
 
-	var link = weblinking.parse("<ybf.css>; rel=foobar, <simple.css>; rel=stylesheet");
+	var link = weblinking.parseHeader("<ybf.css>; rel=foobar, <simple.css>; rel=stylesheet");
 	var rel = link.getLinkValuesByRel("stylesheet");
 	strictEqual(rel.length, 1, "wrong count");
-	strictEqual(rel[0].urireference, "simple.css", "wrong uri");
+	strictEqual(rel[0].href, "simple.css", "wrong uri");
 	strictEqual(rel[0].rel.value, "stylesheet", "wrong rel");
 	strictEqual(rel[0].rel.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].rel.language, "", "wrong language");
 	strictEqual(rel[0].resolve(baseURI, resolver).toString(), "http://base.example.com/simple.css", "wrong resovled URI");
 	rel = link.getLinkValuesByRel("foobar");
 	strictEqual(rel.length, 1, "wrong count");
-	strictEqual(rel[0].urireference, "ybf.css", "wrong uri");
+	strictEqual(rel[0].href, "ybf.css", "wrong uri");
 	strictEqual(rel[0].rel.value, "foobar", "wrong rel");
 	strictEqual(rel[0].rel.charset, "US-ASCII", "wrong charset");
 	strictEqual(rel[0].rel.language, "", "wrong language");
 	strictEqual(rel[0].resolve(baseURI, resolver).toString(), "http://base.example.com/ybf.css", "wrong resovled URI");
+
+	var testDiv = document.getElementById('test');
+	testDiv.innerHTML = link.toHTML();
+	strictEqual(testDiv.innerHTML, link.toHTML(), "Round trip via innerHTML");
 });
 

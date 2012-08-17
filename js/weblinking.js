@@ -9,7 +9,7 @@
 	/*properties
 	Link, LinkParam, LinkValue, charset, create, exec, getLinkValuesByRel,
 	indexOf, language, length, linkvalue, parse, push, rel, replace, test,
-	urireference, value, weblinking
+	href, value, weblinking
 	*/
 	var
 		/** @private @type regex */
@@ -21,7 +21,9 @@
 		/** @private @type regex */
 		skipParamRegex = /^[^,;]*(,|;|$)/,
 		/** @private @type regex */
-		emptyRegex = /^\s*$/;
+		emptyRegex = /^\s*$/,
+		/** @private @type regex */
+		htmlAttributeRegex = /^[a-zA-Z_:][\-a-zA-Z0-9_:.]*$/;
 
 	var LinkParamProto = {
 			toString: function () {
@@ -54,7 +56,23 @@
 				if (this.anchor !== undefined) {
 					baseURI = resolver(baseURI, this.anchor.toString());
 				}
-				return resolver(baseURI, this.urireference);
+				return resolver(baseURI, this.href);
+			},
+	
+			toHTML: function () {
+				var html = [], h = -1;
+				html[++h] = '<link';
+				for (var ii in this) {
+					if (this.hasOwnProperty(ii) && htmlAttributeRegex.test(ii)) {
+						html[++h] = ' ';
+						html[++h] = ii;
+						html[++h] = '="';
+						html[++h] = String(this[ii]).replace('"', '&quot;').replace('<', '&lt;').replace('>', '&gt;');
+						html[++h] = '"';
+					}
+				}
+				html[++h] = '>';
+				return html.join('');
 			}
 		};
 
@@ -114,6 +132,18 @@
 	 * may require them to be referred to the same way by code outside of
 	 * weblinking.js to avoid incorrect renaming. The simple optimisations mode
 	 * does not suffer this problem.</li>
+	 * <li>When converting to a HTML link element any extended attributes lose
+	 * their language information</li>
+	 * <li>Link parameters that are not able to be encoded as valid HTML
+	 * attribute names are not include in the output of toHTML.</li>
+	 * <li>The anchor parameter is not applied to the URL when convering
+	 * toHTML. Instead the parameter is uselessly added to the DOM.</li>
+	 * </ul>
+	 * 
+	 * Incompatible API changes since 1.0 revision:
+	 * <ul>
+	 * <li>The urireference attribute of a LinkValue has been renamed to href for improved consistency with HTML.</li>
+	 * <li>The parse function has been renamed to parseHeader</li>
 	 * </ul>
 	 * 
 	 * @name weblinking
@@ -153,19 +183,19 @@
 		/**
 		 * A single link-value.
 		 *
-		 * The fixed urireference field is always available. Other fields of
+		 * The fixed href field is always available. Other fields of
 		 * type weblinking.LinkParam are added directly as fields.
 		 * @name weblinking.LinkValue
-		 * @param {!string} urireference The URI-Reference for this link-value.
+		 * @param {!string} href The URI-Reference for this link-value.
 		 * @namespace
 		 */
-		LinkValue: function (urireference) {
+		LinkValue: function (href) {
 			var that = Object.create(LinkValueProto);
 			/** The uri reference of the link-value
-			 * @name weblinking.LinkValue.urireference
+			 * @name weblinking.LinkValue.href
 			 * @type !string
 			 */
-			that.urireference = urireference;
+			that.href = href;
 			return that;
 		},
 
@@ -192,21 +222,29 @@
 					}
 				}
 				return result;
+			},
+			
+			toHTML: function () {
+				var html = [], h = -1;
+				for (var ii = 0, length = this.linkvalue.length; ii < length; ii += 1) {
+					html[++h] = this.linkvalue[ii].toHTML();
+				}
+				return html.join('');
 			}
 		},
 
 		/**
 		 * Parse the nominated link header
 		 *
-		 * @name weblinking.parse
+		 * @name weblinking.fromHeader
 		 * @function
 		 *
 		 * @param {!string} header The text of the Link header.
 		 *
 		 * @return {!weblinking.Link} The parsed header information.
 		 */
-		parse: function (header) {
-			var result, linkvalue, fields, obj, matched, keepLooping, urireference;
+		parseHeader: function (header) {
+			var result, linkvalue, fields, obj, matched, keepLooping, href;
 
 			result = Object.create(this.Link);
 			/** The set of link values
@@ -217,25 +255,25 @@
 
 			var linkFunc = function (all, uriref, endToken) {
 				matched = true;
-				if (uriref !== undefined) {
+				if (uriref !== undefined && uriref !== "") {
 					// Look for URI-Reference
-					urireference = uriref;
+					href = uriref;
 				}
 				keepLooping = (endToken === ';');
 				return '';
 			};
 
-			var paramFunc = function (all, e1, e2, parmname, e4, e5, doubleQuotedValue, e7, e8, e9, unquotedValue, e11, extparmname, extcharset, extlanguage, extvalue, endToken) {
+			var paramFunc = function (all, e1, e2, parmname, e4, doubleQuotedValueContext, doubleQuotedValue, e7, e8, e9, unquotedValue, extvalueContext, extparmname, extcharset, extlanguage, extvalue, endToken) {
 				matched = true;
-				if (unquotedValue !== undefined) {
-					// This is an unquoted value
-					obj = weblinking.LinkParam(unquotedValue);
-					linkvalue[parmname] = obj;
-				} else if (doubleQuotedValue !== undefined) {
+				// Firefox uses "" instead of undefined for unmatched
+				// parameters. This means we must look for more context than
+				// just the value we want to match and compare that context to
+				// the empty string.
+				if (doubleQuotedValue !== undefined && doubleQuotedValueContext !== "") {
 					// This is a double-quoted value
 					obj = weblinking.LinkParam(stripslasshes(doubleQuotedValue));
 					linkvalue[parmname] = obj;
-				} else if (extvalue !== undefined) {
+				} else if (extvalue !== undefined && extvalueContext !== "") {
 					try {
 						// This is an extension value
 						obj = weblinking.LinkParam(decodeURI(extvalue),
@@ -247,6 +285,10 @@
 						// There was most likely a character encoding issue.
 						// We continue and hope for the best.
 					}
+				} else if (unquotedValue !== undefined) {
+					// This is an unquoted value
+					obj = weblinking.LinkParam(unquotedValue);
+					linkvalue[parmname] = obj;
 				}
 				keepLooping = (endToken === ';');
 				return '';
@@ -277,7 +319,7 @@
 					continue;
 				}
 				
-				linkvalue = weblinking.LinkValue(urireference);
+				linkvalue = weblinking.LinkValue(href);
 				result.linkvalue.push(linkvalue);
 
 				while (keepLooping) {

@@ -7,3 +7,8 @@ var strictEqual = function (a, b, description) {
 		throw description;
 	}
 };
+var document = {
+	getElementById: function () {
+		return {};
+	}
+};
